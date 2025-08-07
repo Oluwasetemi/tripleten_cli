@@ -61,7 +61,7 @@ class TestCLIHelp:
         runner = CliRunner()
         result = runner.invoke(tripleten, ["--version"])
         assert result.exit_code == 0
-        assert "version 0.1.0" in result.output
+        assert "version 0.1.1" in result.output
 
 
 class TestLeaderboardCommand:

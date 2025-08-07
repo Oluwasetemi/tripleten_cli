@@ -48,11 +48,11 @@ jobs:
 
     - name: Check code formatting with black
       run: |
-        black --check --diff src/ tests/ *.py
+        black --check --diff src/ tests/
 
     - name: Check import sorting with isort
       run: |
-        isort --check-only --diff src/ tests/ *.py
+        isort --check-only --diff src/ tests/
 
     - name: Type checking with mypy
       run: |
@@ -90,16 +90,16 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest tests/ -m "not slow and not integration" --cov=tripleten_cli --cov=client --cov=render --cov-report=xml --cov-report=term-missing -v
+        pytest tests/ -m "not slow and not integration" --cov=src/tripleten_cli --cov-report=xml --cov-report=term-missing -v
 
     - name: Run integration tests
       run: |
-        pytest tests/ -m "integration" --cov=tripleten_cli --cov=client --cov=render --cov-append --cov-report=xml --cov-report=term-missing -v
+        pytest tests/ -m "integration" --cov=src/tripleten_cli --cov-append --cov-report=xml --cov-report=term-missing -v
       if: matrix.python-version == '3.11'  # Only run integration tests on one Python version
 
     - name: Run slow tests
       run: |
-        pytest tests/ -m "slow" --cov=tripleten_cli --cov=client --cov=render --cov-append --cov-report=xml --cov-report=term-missing -v
+        pytest tests/ -m "slow" --cov=src/tripleten_cli --cov-append --cov-report=xml --cov-report=term-missing -v
       if: matrix.python-version == '3.11' && github.event_name == 'schedule'  # Only run slow tests on scheduled builds
 
     - name: Upload coverage to Codecov

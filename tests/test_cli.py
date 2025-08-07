@@ -24,7 +24,9 @@ class TestCLIHelp:
         runner = CliRunner()
         result = runner.invoke(tripleten, ["--help"])
         assert result.exit_code == 0
-        assert "TripleTen CLI" in result.output
+        assert (
+            "Command-line interface for TripleTen educational platform" in result.output
+        )
         assert "leaderboard" in result.output
         assert "login" in result.output
         assert "config" in result.output

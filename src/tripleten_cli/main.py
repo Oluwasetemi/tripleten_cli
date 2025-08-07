@@ -11,7 +11,7 @@ console = Console()
 @click.group()
 @click.version_option(version=__version__, prog_name="tripleten-cli")
 def cli() -> None:
-    """TripleTen CLI - A command-line interface for the TripleTen educational platform."""
+    """TripleTen CLI - a command-line interface for TripleTen educational platform."""
     pass
 
 

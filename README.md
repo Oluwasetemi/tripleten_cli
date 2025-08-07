@@ -420,4 +420,4 @@ The demo showcases:
 
 ## Support
 
-For support, please contact support@tripleten.com or open an issue in the GitHub repository.
+For support, please contact o.ojo@tripleten-team.com or open an issue in the GitHub repository.

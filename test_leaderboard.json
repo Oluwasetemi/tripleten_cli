@@ -1,0 +1,50 @@
+[
+  {
+    "rank": 1,
+    "user": "Alice",
+    "user_id": "alice123",
+    "xp": 15000,
+    "completed": 45,
+    "streak": 12
+  },
+  {
+    "rank": 2,
+    "user": "Bob",
+    "user_id": "bob456",
+    "xp": 12500,
+    "completed": 38,
+    "streak": 8
+  },
+  {
+    "rank": 3,
+    "user": "Charlie",
+    "user_id": "charlie789",
+    "xp": 11000,
+    "completed": 35,
+    "streak": 15
+  },
+  {
+    "rank": 4,
+    "user": "Diana",
+    "user_id": "diana012",
+    "xp": 9500,
+    "completed": 30,
+    "streak": 5
+  },
+  {
+    "rank": 5,
+    "user": "Eve",
+    "user_id": "eve345",
+    "xp": 8000,
+    "completed": 25,
+    "streak": 3
+  },
+  {
+    "rank": 6,
+    "user": "Frank",
+    "user_id": "frank678",
+    "xp": 7500,
+    "completed": 22,
+    "streak": 7
+  }
+]

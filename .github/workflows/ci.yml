@@ -103,7 +103,7 @@ jobs:
       if: matrix.python-version == '3.11' && github.event_name == 'schedule'  # Only run slow tests on scheduled builds
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
         flags: unittests

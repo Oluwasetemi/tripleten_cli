@@ -308,7 +308,7 @@ class TripleTenHTTPClient:
 
 
 def create_client(config_dir: Path) -> TripleTenHTTPClient:
-    """Factory function to create HTTP client instance.
+    """Create HTTP client instance.
 
     Args:
         config_dir: Directory containing configuration files

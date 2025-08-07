@@ -66,7 +66,7 @@ def get_current_timestamp() -> str:
 @click.version_option(version=__version__, prog_name="tripleten")
 @click.pass_context
 def tripleten(ctx: click.Context) -> None:
-    """TripleTen CLI - A command-line interface for TripleTen educational platform."""
+    """Command-line interface for TripleTen educational platform."""
     if ctx.invoked_subcommand is None:
         # Default to leaderboard command when no subcommand is provided
         ctx.invoke(leaderboard)
@@ -89,7 +89,7 @@ def tripleten(ctx: click.Context) -> None:
     help="Refresh interval in seconds (for watch mode).",
 )
 def leaderboard(period: Optional[str], watch: bool, interval: Optional[int]) -> None:
-    """Display TripleTen leaderboard (default command)."""
+    """Display TripleTen leaderboard."""
     # Get configuration and apply defaults
     try:
         config = get_config()

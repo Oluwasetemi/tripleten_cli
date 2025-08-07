@@ -20,7 +20,10 @@ except ImportError:
     # Create a dummy Text class for type hints when rich is not available
 
     class DummyText:
+        """Dummy Text class for when rich is not available."""
+
         def __init__(self, text: str, style: Optional[str] = None) -> None:
+            """Initialize dummy text."""
             self.text = text
             self.style = style
 
@@ -159,7 +162,7 @@ def _render_with_tabulate(
 
 
 def _render_basic(leaderboard_data: List[Dict[str, Any]], current_user_id: str) -> None:
-    """Basic fallback rendering without external libraries."""
+    """Render leaderboard using basic fallback without external libraries."""
     print("\n🏆 Leaderboard")
     print("=" * 70)
     print(f"{'Rank':<6} {'User':<20} {'XP':<10} {'Completed':<10} {'Streak':<8}")

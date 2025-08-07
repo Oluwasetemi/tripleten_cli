@@ -3,3 +3,7 @@
 __version__ = "0.1.0"
 __author__ = "TripleTen"
 __email__ = "support@tripleten.com"
+
+from .cli import tripleten
+
+__all__ = ["tripleten"]

@@ -31,4 +31,5 @@ repos:
     rev: v1.5.1
     hooks:
       - id: mypy
-        additional_dependencies: [click, rich]
+        args: ["--ignore-missing-imports", "--config-file=mypy.ini"]
+        additional_dependencies: [types-requests, types-tabulate, click, rich]

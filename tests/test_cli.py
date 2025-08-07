@@ -128,6 +128,7 @@ class TestLeaderboardCommand:
             # Should show leaderboard data
             assert "Alice Johnson" in result.output
 
+    @pytest.mark.integration
     def test_leaderboard_with_client_integration(
         self, mock_config, sample_leaderboard_data
     ):
@@ -172,6 +173,7 @@ class TestLeaderboardCommand:
                 # Should show fallback data
                 assert "Alice Johnson" in result.output
 
+    @pytest.mark.integration
     def test_leaderboard_with_render_module(self, mock_config, sample_leaderboard_data):
         """Test leaderboard with render module integration."""
         mock_render = Mock()

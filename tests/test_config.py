@@ -172,6 +172,7 @@ class TestConfig:
         expected_path = temp_config_dir / "config.toml"
         assert config.config_path == expected_path
 
+    @pytest.mark.integration
     def test_platformdirs_integration(self, temp_config_dir):
         """Test that platformdirs is used correctly."""
         with patch(

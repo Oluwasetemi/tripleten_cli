@@ -305,6 +305,7 @@ class TestCreateClientFactory:
         assert client.config_dir == config_dir
 
 
+@pytest.mark.integration
 class TestClientIntegration:
     """Integration tests for client functionality."""
 

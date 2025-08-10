@@ -210,7 +210,7 @@ def demo_outro() -> None:
     type_text("  🎨 Rich terminal output")
     print()
     type_text("Get started: pipx install tripleten-cli")
-    type_text("Documentation: https://github.com/tripleten/tripleten-cli")
+    type_text("Documentation: https://github.com/Oluwasetemi/tripleten-cli")
     print()
     time.sleep(2)
 

@@ -13,7 +13,7 @@ The CLI now uses browser cookies for authentication instead of username/password
 3. **Open Developer Tools** (F12 or right-click → "Inspect")
 4. **Go to the Network tab**
 5. **Refresh the page** (Ctrl+R / Cmd+R)
-6. **Find the leaderboard request** (look for a request to `/internal_api/gamification/leaderboard`)
+6. **Find the leaderboard request** (look for a request to `/internal_api/gamification/leaderboard`) or use `copy(document.cookie);`
 7. **Right-click on the request** → "Copy" → "Copy as cURL"
 8. **Extract the Cookie header** from the cURL command
 

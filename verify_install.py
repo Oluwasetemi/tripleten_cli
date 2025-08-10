@@ -141,7 +141,7 @@ def print_installation_help() -> None:
     print("\n2. Install with pip:")
     print("   pip install tripleten-cli")
     print("\n3. Development installation:")
-    print("   git clone https://github.com/tripleten/tripleten-cli.git")
+    print("   git clone https://github.com/Oluwasetemi/tripleten-cli.git")
     print("   cd tripleten-cli")
     print("   pip install -e .")
 
@@ -207,8 +207,8 @@ def main() -> None:
     else:
         print("  ⚠️  Some checks failed. Please address the issues above.")
         print("\n📚 Documentation:")
-        print("  - README: https://github.com/tripleten/tripleten-cli#readme")
-        print("  - Issues: https://github.com/tripleten/tripleten-cli/issues")
+        print("  - README: https://github.com/Oluwasetemi/tripleten-cli#readme")
+        print("  - Issues: https://github.com/Oluwasetemi/tripleten-cli/issues")
 
     print("\n🎉 Happy learning with TripleTen CLI!")
 

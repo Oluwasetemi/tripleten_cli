@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tripleten-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "A command-line interface tool for TripleTen educational platform"
-authors = [{name = "TripleTen", email = "support@tripleten.com"}]
+authors = [{name = "TripleTen", email = "o.ojo@tripleten-team.com"}]
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
@@ -61,9 +61,9 @@ dev = [
 tripleten = "tripleten_cli.cli:tripleten"
 
 [project.urls]
-Homepage = "https://github.com/tripleten/tripleten-cli"
-Repository = "https://github.com/tripleten/tripleten-cli"
-Issues = "https://github.com/tripleten/tripleten-cli/issues"
+Homepage = "https://github.com/Oluwasetemi/tripleten-cli"
+Repository = "https://github.com/Oluwasetemi/tripleten-cli"
+Issues = "https://github.com/Oluwasetemi/tripleten-cli/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -41,14 +41,14 @@ tripleten --version
 pip install tripleten-cli
 
 # Or install latest development version
-pip install git+https://github.com/tripleten/tripleten-cli.git
+pip install git+https://github.com/Oluwasetemi/tripleten-cli.git
 ```
 
 ### Option 3: Development Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/tripleten/tripleten-cli.git
+   git clone https://github.com/Oluwasetemi/tripleten-cli.git
    cd tripleten-cli
    ```
 

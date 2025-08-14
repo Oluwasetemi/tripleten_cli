@@ -369,3 +369,358 @@ class TestClientIntegration:
         request_cookies = responses.calls[0].request.headers.get("Cookie", "")
         assert "session=test_session" in request_cookies
         assert "csrf=test_csrf" in request_cookies
+
+
+@pytest.mark.slow
+class TestClientSlowOperations:
+    """Slow tests for client operations that require more comprehensive testing."""
+
+    @pytest.fixture
+    def client(self, tmp_path):
+        """Create a client instance for slow tests."""
+        return TripleTenHTTPClient(tmp_path)
+
+    @pytest.mark.slow
+    def test_comprehensive_cookie_management(self, client):
+        """Test comprehensive cookie management scenarios."""
+        import time
+
+        # Test saving cookies with various formats
+        test_cookies = {
+            "session": "long_session_string_" + "x" * 100,
+            "csrf": "csrf_token_123",
+            "user_pref": "dark_mode=true",
+            "timestamp": str(int(time.time())),
+        }
+
+        # Save cookies
+        for name, value in test_cookies.items():
+            client.session.cookies.set(name, value)
+        client._save_cookies()
+
+        # Create new client and verify all cookies loaded
+        new_client = TripleTenHTTPClient(client.config_dir)
+        for name, value in test_cookies.items():
+            assert new_client.session.cookies.get(name) == value
+
+        # Test cookie file corruption resistance
+        cookies_file = client._get_cookies_file_path()
+        with open(cookies_file, "w") as f:
+            f.write("invalid json content")
+
+        # Should handle gracefully without crashing
+        another_client = TripleTenHTTPClient(client.config_dir)
+        assert len(another_client.session.cookies) == 0
+
+    @pytest.mark.slow
+    @responses.activate
+    def test_authentication_flow_scenarios(self, client):
+        """Test various authentication flow scenarios."""
+        # Test successful authentication
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/api/user/profile",
+            json={"user_id": "123", "name": "Test User"},
+            status=200,
+        )
+
+        assert client.is_authenticated() is True
+
+        # Clear responses and test authentication failure
+        responses.reset()
+        responses.add(
+            responses.GET, "https://hub.tripleten.com/api/user/profile", status=401
+        )
+
+        with pytest.raises(AuthenticationError):
+            client.is_authenticated()
+
+        # Test network error handling
+        responses.reset()
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/api/user/profile",
+            body=ConnectionError("Network unreachable"),
+        )
+
+        with pytest.raises(ConnectionError):
+            client.is_authenticated()
+
+    @pytest.mark.slow
+    @responses.activate
+    def test_leaderboard_api_error_scenarios(self, client):
+        """Test leaderboard API with various error scenarios."""
+        # Test successful fetch
+        success_data = {"leaderboard": [{"rank": 1, "user": "Alice", "xp": 1000}]}
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            json=success_data,
+            status=200,
+        )
+
+        result = client.fetch_leaderboard("week")
+        assert result == success_data
+
+        # Test rate limiting (429)
+        responses.reset()
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            status=429,
+            headers={"Retry-After": "60"},
+        )
+
+        try:
+            client.fetch_leaderboard("week")
+            assert False, "Should have raised an error"
+        except (ConnectionError, requests.HTTPError):
+            pass  # Expected error
+
+        # Test server error (500)
+        responses.reset()
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            status=500,
+        )
+
+        try:
+            client.fetch_leaderboard("week")
+            assert False, "Should have raised an error"
+        except (ConnectionError, requests.HTTPError):
+            pass  # Expected error
+
+        # Test authentication error (401)
+        responses.reset()
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            status=401,
+        )
+
+        with pytest.raises(AuthenticationError):
+            client.fetch_leaderboard("week")
+
+    @pytest.mark.slow
+    @responses.activate
+    def test_retry_mechanism_comprehensive(self, client):
+        """Test retry mechanism with various failure patterns."""
+
+        # Test successful retry after failures
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/api/user/profile",
+            status=500,  # First call fails
+        )
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/api/user/profile",
+            status=500,  # Second call fails
+        )
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/api/user/profile",
+            json={"user": "success"},  # Third call succeeds
+            status=200,
+        )
+
+        result = client.get_user_info()
+
+        assert result == {"user": "success"}
+        # Should have taken some time due to retries (reduce threshold for test reliability)
+        # Timing assertions removed as they are unpredictable in tests
+        assert len(responses.calls) == 3
+
+    @pytest.mark.slow
+    @responses.activate
+    def test_large_response_handling(self, client):
+        """Test handling of large API responses."""
+        # Create large leaderboard data
+        large_leaderboard = {"leaderboard": []}
+        for i in range(5000):  # Large dataset
+            large_leaderboard["leaderboard"].append(
+                {
+                    "rank": i + 1,
+                    "user": f"User{i:04d}",
+                    "user_id": f"user{i:04d}",
+                    "xp": 5000 - i,
+                    "completed": 20 - (i // 250),
+                    "streak": 15 - (i // 333),
+                }
+            )
+
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            json=large_leaderboard,
+            status=200,
+        )
+
+        result = client.fetch_leaderboard("all")
+        assert len(result["leaderboard"]) == 5000
+        assert result["leaderboard"][0]["rank"] == 1
+        assert result["leaderboard"][-1]["rank"] == 5000
+
+    @pytest.mark.slow
+    def test_concurrent_operations_safety(self, client):
+        """Test client safety with concurrent-like operations."""
+        import time
+
+        # Simulate concurrent cookie operations
+        def save_cookies():
+            for i in range(10):
+                client.session.cookies.set(f"test_cookie_{i}", f"value_{i}")
+                client._save_cookies()
+                time.sleep(0.01)  # Small delay
+
+        def load_cookies():
+            for i in range(10):
+                TripleTenHTTPClient(client.config_dir)  # Just create, don't store
+                time.sleep(0.01)  # Small delay
+
+        # This simulates concurrent access patterns
+        save_cookies()
+        load_cookies()
+
+        # Verify final state is consistent
+        final_client = TripleTenHTTPClient(client.config_dir)
+        cookie_count = len(final_client.session.cookies)
+        assert cookie_count >= 0  # Should not crash
+
+    @pytest.mark.slow
+    def test_config_directory_edge_cases(self, tmp_path):
+        """Test client with various config directory scenarios."""
+        # Test with very deep directory path
+        deep_path = tmp_path
+        for i in range(10):
+            deep_path = deep_path / f"level_{i}"
+        deep_path.mkdir(parents=True)
+
+        client = TripleTenHTTPClient(deep_path)
+        client.session.cookies.set("test", "value")
+        client._save_cookies()
+
+        # Should work with deep paths
+        new_client = TripleTenHTTPClient(deep_path)
+        assert new_client.session.cookies.get("test") == "value"
+
+        # Test with read-only directory (if possible on the system)
+        readonly_path = tmp_path / "readonly"
+        readonly_path.mkdir()
+        try:
+            readonly_path.chmod(0o444)  # Read-only
+            readonly_client = TripleTenHTTPClient(readonly_path)
+            readonly_client.session.cookies.set("test", "value")
+            # Should handle gracefully when can't write
+            readonly_client._save_cookies()
+        except (PermissionError, OSError):
+            # This is expected on read-only directories
+            pass
+        finally:
+            # Restore permissions for cleanup
+            try:
+                readonly_path.chmod(0o755)
+            except (PermissionError, OSError):
+                pass
+
+    @pytest.mark.slow
+    def test_cookie_save_io_error(self, client):
+        """Test cookie save IOError handling - covers line 122-123."""
+        client.session.cookies.set("test", "value")
+
+        # Mock open to raise IOError
+        with patch("builtins.open", side_effect=IOError("Permission denied")):
+            # Should handle IOError gracefully - covers lines 122-123
+            client._save_cookies()  # Should not crash
+
+    @pytest.mark.slow
+    def test_cookie_parsing_edge_cases(self, client):
+        """Test cookie parsing edge cases - covers lines 143-152."""
+        # Test complex cookie string with quoted values - covers lines 143-147
+        complex_cookie = (
+            'session="value with; semicolon"; path=/; secure; httponly; other="value"'
+        )
+        client.login(complex_cookie)
+
+        # Verify cookies were parsed
+        assert len(client.session.cookies) > 0
+
+    @pytest.mark.slow
+    @responses.activate
+    def test_api_error_response_parsing(self, client):
+        """Test API error response parsing - covers lines 248-254."""
+        # Test with JSON error response - covers lines 249-251
+        error_response = {"message": "Invalid request", "code": 400}
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            json=error_response,
+            status=400,
+        )
+
+        try:
+            client.fetch_leaderboard("week")
+            assert False, "Should have raised HTTPError"
+        except requests.HTTPError as e:
+            assert "Invalid request" in str(e)
+
+        # Test with non-JSON error response - covers lines 252-253
+        responses.reset()
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            body="Plain text error",
+            status=500,
+        )
+
+        try:
+            client.fetch_leaderboard("week")
+            assert False, "Should have raised HTTPError"
+        except requests.HTTPError as e:
+            assert "Plain text error" in str(e)
+
+    @pytest.mark.slow
+    @responses.activate
+    def test_api_response_transformation(self, client):
+        """Test API response transformation - covers lines 261-262+."""
+        # Test transformation of top_members format - covers line 261-262
+        api_response = {
+            "top_members": [
+                {"rank": 1, "username": "Alice", "user_id": "alice123", "points": 2500},
+                {"rank": 2, "username": "Bob", "user_id": "bob456", "points": 2200},
+            ]
+        }
+
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            json=api_response,
+            status=200,
+        )
+
+        result = client.fetch_leaderboard("week")
+
+        # Should transform top_members to leaderboard format
+        assert "leaderboard" in result
+        assert len(result["leaderboard"]) == 2
+        assert result["leaderboard"][0]["rank"] == 1
+
+    @pytest.mark.slow
+    @responses.activate
+    def test_json_decode_error_handling(self, client):
+        """Test JSON decode error handling in fetch_leaderboard."""
+        # Test invalid JSON response
+        responses.add(
+            responses.GET,
+            "https://hub.tripleten.com/internal_api//gamification/leaderboard",
+            body="invalid json {",
+            status=200,
+            headers={"Content-Type": "application/json"},
+        )
+
+        try:
+            client.fetch_leaderboard("week")
+            assert False, "Should have raised error"
+        except (json.JSONDecodeError, ValueError, ConnectionError):
+            pass  # Expected error

@@ -71,3 +71,21 @@ The project uses a src layout with the main package in `src/tripleten_cli/`:
 - Entry point: `tripleten = "tripleten_cli.cli:tripleten"`
 - Supports Python 3.9+
 - Development dependencies include full testing and quality toolchain
+
+## Important Development Guidelines
+
+### Quality Assurance
+- After making code changes, always run quality checks: `make check` or `make pre-commit`
+- Run tests to ensure changes don't break functionality: `make test` or specific test with `pytest tests/test_file.py::test_function`
+- Coverage requirement is 80% - check with `make test-coverage`
+- Use `make format` to format code before committing
+
+### Git Workflow
+- Modified files in current state: tests/test_cli.py, tests/test_render.py
+- Always run `make pre-commit` before creating commits
+- Use `make ci` to simulate full CI pipeline locally
+
+### Tox Environments
+- Multiple Python version testing: py39, py310, py311, py312
+- Specialized environments: lint, type, security, coverage, docs
+- Run with `tox` or `make tox` for full environment testing

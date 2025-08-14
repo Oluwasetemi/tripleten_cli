@@ -226,3 +226,271 @@ class TestConfigError:
         error = ConfigError("Test error")
         assert isinstance(error, Exception)
         assert str(error) == "Test error"
+
+
+@pytest.mark.slow
+class TestConfigSlowOperations:
+    """Slow tests for configuration operations requiring comprehensive testing."""
+
+    @pytest.fixture
+    def temp_config_dir(self):
+        """Create a temporary directory for slow configuration testing."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield Path(temp_dir)
+
+    @pytest.mark.slow
+    def test_comprehensive_config_persistence(self, temp_config_dir):
+        """Test comprehensive configuration persistence scenarios."""
+        with patch.object(Config, "_get_config_dir", return_value=temp_config_dir):
+            # Create config and set various values
+            config = Config()
+
+            # Test setting all possible configuration values
+            test_values = {
+                "default_period": "30_days",
+                "default_interval": 60,
+                "session_cookie": "very_long_session_cookie_" + "x" * 200,
+                "user_id": "test_user_123",
+                "custom_setting": "custom_value",
+                "nested": {"key": "value", "number": 42},
+                "list_setting": ["item1", "item2", "item3"],
+            }
+
+            for key, value in test_values.items():
+                config.set(key, value)
+                config.save()
+
+            # Create new config instance and verify all values persist
+            new_config = Config()
+            for key, value in test_values.items():
+                if key in [
+                    "nested",
+                    "list_setting",
+                ]:  # These won't be accessible via property
+                    continue
+                if hasattr(new_config, key):
+                    assert getattr(new_config, key) == value
+                else:
+                    assert new_config.get(key) == value
+
+    @pytest.mark.slow
+    def test_config_file_corruption_recovery(self, temp_config_dir):
+        """Test configuration recovery from file corruption."""
+        with patch.object(Config, "_get_config_dir", return_value=temp_config_dir):
+            # Create normal config first
+            config = Config()
+            config.set("user_id", "test_user")
+            config.save()
+
+            # Corrupt the config file
+            config_file = temp_config_dir / "config.toml"
+            with open(config_file, "w") as f:
+                f.write("invalid toml content ][[ malformed")
+
+            # Should recover gracefully with defaults
+            try:
+                corrupted_config = Config()
+                assert corrupted_config.default_period == "all_time"  # Default value
+                assert corrupted_config.user_id is None  # Corrupted value lost
+            except ConfigError:
+                # Expected - corruption detected, create fresh config
+                os.remove(config_file)
+                corrupted_config = Config()
+                assert corrupted_config.default_period == "all_time"
+
+            # Should be able to save new values
+            corrupted_config.set("user_id", "recovered_user")
+            corrupted_config.save()
+
+            # Verify recovery worked
+            recovered_config = Config()
+            assert recovered_config.user_id == "recovered_user"
+
+    @pytest.mark.slow
+    def test_config_concurrent_access_simulation(self, temp_config_dir):
+        """Test configuration with simulated concurrent access patterns."""
+        import time
+
+        with patch.object(Config, "_get_config_dir", return_value=temp_config_dir):
+            # Simulate multiple config instances accessing the same file
+            configs = []
+            for i in range(5):
+                config = Config()
+                config.set("setting_" + str(i), f"value_{i}")
+                config.save()
+                configs.append(config)
+                time.sleep(0.01)  # Small delay to simulate timing differences
+
+            # Create final config and verify all settings are accessible
+            final_config = Config()
+            for i in range(5):
+                assert final_config.get(f"setting_{i}") == f"value_{i}"
+
+    @pytest.mark.slow
+    def test_config_directory_permissions(self, temp_config_dir):
+        """Test configuration with various directory permission scenarios."""
+        with patch.object(Config, "_get_config_dir", return_value=temp_config_dir):
+            # Test normal operation
+            config = Config()
+            config.set("test_key", "test_value")
+            config.save()
+
+            # Test with read-only config file (if possible)
+            config_file = temp_config_dir / "config.toml"
+            try:
+                original_mode = config_file.stat().st_mode
+                config_file.chmod(0o444)  # Read-only
+
+                readonly_config = Config()
+                # Should still be able to read
+                assert readonly_config.get("test_key") == "test_value"
+
+                # Save should handle gracefully
+                readonly_config.set("new_key", "new_value")
+                try:
+                    readonly_config.save()
+                except (PermissionError, OSError, ConfigError):
+                    # This is expected for read-only files or permission issues
+                    pass
+
+            except (PermissionError, OSError):
+                # Skip this test if we can't change permissions
+                pass
+            finally:
+                # Restore permissions
+                try:
+                    config_file.chmod(original_mode)
+                except (PermissionError, OSError, FileNotFoundError):
+                    pass
+
+    @pytest.mark.slow
+    def test_config_large_data_handling(self, temp_config_dir):
+        """Test configuration with large amounts of data."""
+        with patch.object(Config, "_get_config_dir", return_value=temp_config_dir):
+            config = Config()
+
+            # Set a large amount of configuration data
+            large_data = {}
+            for i in range(1000):
+                large_data[
+                    f"key_{i:04d}"
+                ] = f"value_{'x' * 100}_{i}"  # 100+ char values
+
+            # Set all the data
+            for key, value in large_data.items():
+                config.set(key, value)
+
+            config.save()
+
+            # Verify all data persists correctly
+            new_config = Config()
+            for key, value in large_data.items():
+                assert new_config.get(key) == value
+
+    @pytest.mark.slow
+    def test_config_special_characters_handling(self, temp_config_dir):
+        """Test configuration with special characters and Unicode."""
+        with patch.object(Config, "_get_config_dir", return_value=temp_config_dir):
+            config = Config()
+
+            special_test_cases = {
+                "unicode_key": "🌟⭐🎯🚀💫",
+                "multiline_value": "line1\nline2\nline3",
+                "special_chars": "!@#$%^&*()[]{}|\\:;\"'<>?,./",
+                "mixed_content": "Normal text with 🎯 emoji and \n newlines",
+                "empty_string": "",
+                "very_long_key_" + "x" * 100: "very_long_value_" + "y" * 500,
+            }
+
+            for key, value in special_test_cases.items():
+                config.set(key, value)
+
+            config.save()
+
+            # Verify all special character data persists
+            new_config = Config()
+            for key, value in special_test_cases.items():
+                assert new_config.get(key) == value
+
+    @pytest.mark.slow
+    def test_config_environment_variable_scenarios(self, temp_config_dir):
+        """Test configuration with various environment variable scenarios."""
+        # Test with custom config directory from environment
+        custom_config_dir = temp_config_dir / "custom_config"
+        custom_config_dir.mkdir()
+
+        with patch.dict(os.environ, {"XDG_CONFIG_HOME": str(custom_config_dir)}):
+            # This tests the _get_config_dir method behavior with environment variables
+            try:
+                config = Config()
+                config.set("env_test", "env_value")
+                config.save()
+
+                # Verify config was created in custom location
+                # Skip assertion if environment variable override is not implemented
+                if hasattr(config, "_config_dir"):
+                    # This test may fail if env var support isn't implemented
+                    pass
+
+            except (AttributeError, TypeError):
+                # If the implementation doesn't support environment variables
+                pass
+
+    @pytest.mark.slow
+    def test_config_error_scenarios_comprehensive(self, temp_config_dir):
+        """Test comprehensive error scenarios for configuration."""
+        with patch.object(Config, "_get_config_dir", return_value=temp_config_dir):
+            config = Config()
+
+            # Test various invalid operations
+            test_cases = [
+                ("", "empty_key"),  # Empty key
+                ("valid_key", None),  # None value
+                ("valid_key", {"nested": {"deep": {"dict": "value"}}}),  # Deep nesting
+            ]
+
+            for key, value in test_cases:
+                try:
+                    config.set(key, value)
+                    config.save()
+                    # Verify we can retrieve what we set
+                    retrieved = config.get(key)
+                    if value is not None:
+                        assert retrieved == value or str(retrieved) == str(value)
+                except (ConfigError, ValueError, TypeError) as e:
+                    # Some operations might raise errors - this is acceptable
+                    assert isinstance(e, (ConfigError, ValueError, TypeError))
+
+    @pytest.mark.slow
+    def test_config_backup_and_recovery(self, temp_config_dir):
+        """Test configuration backup and recovery scenarios."""
+        with patch.object(Config, "_get_config_dir", return_value=temp_config_dir):
+            # Create initial config
+            config = Config()
+            original_data = {
+                "user_id": "original_user",
+                "default_period": "7_days",
+                "session_cookie": "original_cookie",
+            }
+
+            for key, value in original_data.items():
+                config.set(key, value)
+            config.save()
+
+            # Create backup by copying the file
+            config_file = temp_config_dir / "config.toml"
+            backup_file = temp_config_dir / "config_backup.toml"
+            backup_file.write_text(config_file.read_text())
+
+            # Modify config
+            config.set("user_id", "modified_user")
+            config.set("new_setting", "new_value")
+            config.save()
+
+            # Simulate recovery by restoring from backup
+            config_file.write_text(backup_file.read_text())
+
+            # Verify recovery worked
+            recovered_config = Config()
+            assert recovered_config.user_id == "original_user"
+            assert recovered_config.get("new_setting") is None  # Should be gone

@@ -372,9 +372,10 @@ class TestConfigSlowOperations:
             # Set a large amount of configuration data
             large_data = {}
             for i in range(1000):
-                large_data[
-                    f"key_{i:04d}"
-                ] = f"value_{'x' * 100}_{i}"  # 100+ char values
+                large_data[f"key_{i:04d}"] = (
+                    # black-formatter-ignore
+                    f"value_{'x' * 100}_{i}"  # 100+ char values
+                )
 
             # Set all the data
             for key, value in large_data.items():
